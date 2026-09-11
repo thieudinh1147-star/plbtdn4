@@ -2,3 +2,7 @@ streamlit
 pandas
 numpy
 plotly
+scikit-learn==1.6.1
+imbalanced-learn==0.13.0
+joblib
+gdown
