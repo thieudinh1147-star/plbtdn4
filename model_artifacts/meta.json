@@ -15,9 +15,9 @@
     "smoking_history_not current"
   ],
   "cluster_to_risk": {
-    "1": "Nguy cơ Thấp",
-    "2": "Nguy cơ Trung bình",
-    "3": "Nguy cơ Cao",
+    "3": "Nguy cơ Thấp",
+    "1": "Nguy cơ Trung bình",
+    "2": "Nguy cơ Cao",
     "0": "Nguy cơ Rất cao"
   },
   "recommendation_lookup": {
