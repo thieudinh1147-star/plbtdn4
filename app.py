@@ -30,10 +30,12 @@ RF_LOCAL_PATH = os.path.join(MODEL_DIR, "random_forest.joblib")
 # Ánh xạ giá trị tiếng Việt trên giao diện -> giá trị gốc lúc train model
 GENDER_MAP = {"Nam": "Male", "Nữ": "Female", "Khác": "Other"}
 SMOKING_MAP = {
-    "Chưa từng": "never",
-    "Đã từng": "former",
-    "Hiện tại": "current",
     "Không rõ": "No Info",
+    "Chưa từng hút": "never",
+    "Đã từng hút, bỏ lâu": "former",
+    "Từng hút (ever)": "ever",
+    "Mới bỏ gần đây": "not current",
+    "Đang hút": "current",
 }
 
 # =========================================================================
@@ -145,6 +147,17 @@ CUSTOM_CSS = """
         color: #333333;
         font-size: 14px;
     }
+
+    /* Ép nhãn (label) của mọi ô nhập liệu luôn hiển thị màu tối, tránh bị
+       ẩn mất khi trình duyệt người dùng đang bật chế độ tối (dark mode) -
+       lúc đó Streamlit tự đổi label sang màu trắng, trùng với nền sáng
+       mà CSS này đang ép, khiến chữ biến mất. */
+    div[data-testid="stWidgetLabel"] p,
+    div[data-testid="stWidgetLabel"] label,
+    .stApp label {
+        color: #2D3748 !important;
+        font-weight: 500 !important;
+    }
 </style>
 """
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
@@ -204,14 +217,33 @@ CLUSTER_CENTERS_DF["Nhóm nguy cơ"] = [
 
 
 def _encode_raw_input(raw: dict) -> pd.DataFrame:
-    """Mã hóa dữ liệu thô giống hệt bước tiền xử lý lúc train: One-Hot
-    Encoding cho gender/smoking_history, đảm bảo đủ và đúng thứ tự cột."""
-    df_raw = pd.DataFrame([raw])
-    df_encoded = pd.get_dummies(
-        df_raw, columns=["gender", "smoking_history"], drop_first=True
-    )
-    df_encoded = df_encoded.reindex(columns=FEATURE_COLUMNS, fill_value=0)
-    return df_encoded
+    """Mã hóa dữ liệu thô giống hệt bước tiền xử lý lúc train.
+
+    Lưu ý: không dùng pd.get_dummies() ở đây vì nó chỉ hoạt động đúng khi
+    thấy đủ các giá trị khác nhau trong dữ liệu; với 1 dòng duy nhất (1
+    bệnh nhân), get_dummies() sẽ luôn tự loại bỏ cột one-hot do chỉ thấy
+    1 giá trị -> kết quả luôn sai (mọi lựa chọn trên form đều bị hiểu
+    thành nhóm mặc định). Thay vào đó, gán thẳng giá trị 1 cho đúng cột
+    one-hot tương ứng, dựa theo danh sách FEATURE_COLUMNS đã lưu lúc train.
+    """
+    encoded = {col: 0 for col in FEATURE_COLUMNS}
+
+    for col in [
+        "age", "hypertension", "heart_disease",
+        "bmi", "HbA1c_level", "blood_glucose_level",
+    ]:
+        if col in encoded:
+            encoded[col] = raw[col]
+
+    gender_col = f"gender_{raw['gender']}"
+    if gender_col in encoded:
+        encoded[gender_col] = 1
+
+    smoking_col = f"smoking_history_{raw['smoking_history']}"
+    if smoking_col in encoded:
+        encoded[smoking_col] = 1
+
+    return pd.DataFrame([encoded])[FEATURE_COLUMNS]
 
 
 def predict_pipeline(inputs: dict) -> dict:
@@ -277,7 +309,7 @@ with st.form(key="patient_form"):
             "Chỉ số BMI", min_value=10.0, max_value=50.0, value=24.5, step=0.1
         )
         smoking_history = st.selectbox(
-            "Tiền sử hút thuốc", ["Chưa từng", "Đã từng", "Hiện tại", "Không rõ"]
+            "Tiền sử hút thuốc", list(SMOKING_MAP.keys())
         )
 
     with col3:
@@ -434,3 +466,15 @@ if result is not None:
     st.markdown("</div>", unsafe_allow_html=True)
 else:
     st.info("Vui lòng nhập thông tin bệnh nhân và bấm 'DỰ ĐOÁN KẾT QUẢ' để xem kết quả.")
+
+# =========================================================================
+# CẢNH BÁO: KẾT QUẢ CHỈ MANG TÍNH THAM KHẢO (luôn hiển thị, không phụ
+# thuộc việc đã bấm dự đoán hay chưa)
+# =========================================================================
+st.warning(
+    "**Lưu ý:** Kết quả trên chỉ mang tính chất **tham khảo**, được tạo ra "
+    "bởi mô hình học máy dựa trên dữ liệu thống kê, **không phải chẩn đoán "
+    "y khoa chính thức**. Vui lòng đến cơ sở y tế/bệnh viện để được bác sĩ "
+    "thăm khám, xét nghiệm và kiểm chứng trước khi đưa ra bất kỳ quyết định "
+    "điều trị nào."
+)
