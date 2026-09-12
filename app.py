@@ -24,7 +24,7 @@ os.makedirs(MODEL_DIR, exist_ok=True)
 
 # File ID lấy từ link chia sẻ Google Drive của random_forest.joblib
 # (đoạn nằm giữa /d/ và /view trong link chia sẻ)
-RF_DRIVE_FILE_ID = "1HRtUdk0A_mnKOrqKzW-WeC3jJ1fjYhfq"
+RF_DRIVE_FILE_ID = "1t6qrndkCO2B9QvVxBnv7JZ-h0r4l9JFc"
 RF_LOCAL_PATH = os.path.join(MODEL_DIR, "random_forest.joblib")
 
 # Ánh xạ giá trị tiếng Việt trên giao diện -> giá trị gốc lúc train model
@@ -37,6 +37,10 @@ SMOKING_MAP = {
     "Mới bỏ gần đây": "not current",
     "Đang hút": "current",
 }
+
+# Phải khớp CHÍNH XÁC với danh sách cột đã áp StandardScaler lúc train
+# trong notebook (chỉ 4 cột số liên tục, không gồm cột nhị phân/one-hot)
+NUMERIC_COLS = ["age", "bmi", "HbA1c_level", "blood_glucose_level"]
 
 # =========================================================================
 # CẤU HÌNH TRANG & CUSTOM CSS (Phong cách Medical UI)
@@ -246,6 +250,17 @@ def _encode_raw_input(raw: dict) -> pd.DataFrame:
     return pd.DataFrame([encoded])[FEATURE_COLUMNS]
 
 
+def _scale_input(X_new: pd.DataFrame) -> np.ndarray:
+    """Chỉ chuẩn hóa 4 cột số liên tục bằng scaler đã lưu, giữ nguyên các
+    cột nhị phân/one-hot - phải khớp đúng cách xử lý lúc train (StandardScaler
+    KHÔNG được áp cho các cột phân loại, tránh phóng đại nhóm hiếm gặp)."""
+    other_cols = [c for c in X_new.columns if c not in NUMERIC_COLS]
+    X_num_scaled = scaler.transform(X_new[NUMERIC_COLS])
+    X_num_scaled_df = pd.DataFrame(X_num_scaled, columns=NUMERIC_COLS, index=X_new.index)
+    X_scaled_df = pd.concat([X_num_scaled_df, X_new[other_cols]], axis=1)[X_new.columns]
+    return X_scaled_df.values
+
+
 def predict_pipeline(inputs: dict) -> dict:
     """Nhận dict thông tin bệnh nhân (giá trị tiếng Việt từ form), trả về
     dict kết quả từ 2 luồng của mô hình thật:
@@ -265,7 +280,7 @@ def predict_pipeline(inputs: dict) -> dict:
     }
 
     X_new = _encode_raw_input(raw)
-    X_new_scaled = scaler.transform(X_new)
+    X_new_scaled = _scale_input(X_new)
 
     # ---- Luồng 1: PCA -> K-Means (phân khúc rủi ro) ----
     X_new_pca = pca.transform(X_new_scaled)
