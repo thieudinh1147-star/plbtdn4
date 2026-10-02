@@ -1,14 +1,14 @@
 """
 HỆ THỐNG ĐÁNH GIÁ NGUY CƠ & CHẨN ĐOÁN SỨC KHỎE
 Ứng dụng Streamlit dùng mô hình THẬT đã huấn luyện (scaler, pca, kmeans,
-random_forest). File random_forest.joblib quá nặng để đưa lên GitHub nên
-được host trên Google Drive và tự động tải về khi app khởi động.
+random_forest). Toàn bộ các file .joblib (bao gồm random_forest.joblib)
+đã được đưa lên GitHub cùng repo nên được load trực tiếp từ thư mục
+model_artifacts/, không cần tải thêm từ nguồn ngoài.
 """
 
 import json
 import os
 
-import gdown
 import joblib
 import numpy as np
 import pandas as pd
@@ -20,12 +20,6 @@ import streamlit as st
 # CẤU HÌNH ĐƯỜNG DẪN MODEL
 # =========================================================================
 MODEL_DIR = "model_artifacts"
-os.makedirs(MODEL_DIR, exist_ok=True)
-
-# File ID lấy từ link chia sẻ Google Drive của random_forest.joblib
-# (đoạn nằm giữa /d/ và /view trong link chia sẻ)
-RF_DRIVE_FILE_ID = "1t6qrndkCO2B9QvVxBnv7JZ-h0r4l9JFc"
-RF_LOCAL_PATH = os.path.join(MODEL_DIR, "random_forest.joblib")
 
 # Ánh xạ giá trị tiếng Việt trên giao diện -> giá trị gốc lúc train model
 GENDER_MAP = {"Nam": "Male", "Nữ": "Female", "Khác": "Other"}
@@ -187,16 +181,13 @@ st.markdown(
 # =========================================================================
 @st.cache_resource
 def load_models():
-    """Load scaler/pca/kmeans từ thư mục model_artifacts/ (đã có trong repo
-    GitHub). Riêng random_forest.joblib quá nặng nên tải về từ Google Drive
-    trước, chỉ tải 1 lần rồi dùng lại cho các lần dự đoán sau."""
+    """Load toàn bộ scaler/pca/kmeans/random_forest từ thư mục
+    model_artifacts/ (đã có sẵn trong repo GitHub) - không cần tải thêm
+    từ nguồn ngoài nữa."""
     scaler = joblib.load(os.path.join(MODEL_DIR, "scaler.joblib"))
     pca = joblib.load(os.path.join(MODEL_DIR, "pca.joblib"))
     kmeans = joblib.load(os.path.join(MODEL_DIR, "kmeans.joblib"))
-
-    if not os.path.exists(RF_LOCAL_PATH):
-        gdown.download(id=RF_DRIVE_FILE_ID, output=RF_LOCAL_PATH, quiet=False)
-    rf_model = joblib.load(RF_LOCAL_PATH)
+    rf_model = joblib.load(os.path.join(MODEL_DIR, "random_forest.joblib"))
 
     with open(os.path.join(MODEL_DIR, "meta.json"), "r", encoding="utf-8") as f:
         meta = json.load(f)
