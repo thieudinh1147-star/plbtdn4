@@ -15,15 +15,13 @@
     "smoking_history_not current"
   ],
   "cluster_to_risk": {
-    "3": "Nguy cơ Thấp",
-    "1": "Nguy cơ Trung bình",
-    "2": "Nguy cơ Cao",
-    "0": "Nguy cơ Rất cao"
+    "2": "Nguy cơ Thấp",
+    "0": "Nguy cơ Trung bình",
+    "1": "Nguy cơ Cao"
   },
   "recommendation_lookup": {
     "Nguy cơ Thấp": "Duy trì lối sống lành mạnh hiện tại; khám sức khỏe định kỳ hàng năm.",
     "Nguy cơ Trung bình": "Theo dõi BMI và đường huyết mỗi 6 tháng; tăng cường vận động, hạn chế đường/tinh bột.",
-    "Nguy cơ Cao": "Khuyến nghị khám chuyên khoa Nội tiết sớm; theo dõi HbA1c/glucose định kỳ 3 tháng/lần; tư vấn dinh dưỡng.",
-    "Nguy cơ Rất cao": "Khám chuyên khoa Nội tiết ngay; theo dõi HbA1c/glucose định kỳ 1 tháng/lần; phối hợp điều chỉnh chế độ ăn và thuốc theo chỉ định bác sĩ."
+    "Nguy cơ Cao": "Khám chuyên khoa Nội tiết sớm; theo dõi HbA1c/glucose định kỳ 1–3 tháng/lần; tư vấn dinh dưỡng và phối hợp điều chỉnh chế độ ăn/thuốc theo chỉ định bác sĩ."
   }
 }
